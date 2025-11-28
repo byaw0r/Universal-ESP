@@ -1,3 +1,4 @@
+--BYW SCRIPT
 local espEnabled = false
 local chamsEnabled = false
 local teamCheckEnabled = false
@@ -289,6 +290,14 @@ local function onPlayerAdded(player)
 end
 
 espBtn.MouseButton1Click:Connect(toggleMenu)
+
+game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.KeyCode == Enum.KeyCode.N then
+        toggleMenu()
+    end
+end)
 
 espToggle.MouseButton1Click:Connect(toggleESP)
 chamsToggle.MouseButton1Click:Connect(toggleChams)
