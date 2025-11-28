@@ -1,6 +1,6 @@
---BYW SCRIPT
 local espEnabled = false
 local chamsEnabled = false
+local teamCheckEnabled = false
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ESPMenu"
@@ -27,7 +27,7 @@ UICorner.Parent = espBtn
 
 local menuFrame = Instance.new("Frame")
 menuFrame.Name = "MenuFrame"
-menuFrame.Size = UDim2.new(0, 150, 0, 100)
+menuFrame.Size = UDim2.new(0, 150, 0, 140)
 menuFrame.Position = UDim2.new(0, 70, 0, 10)
 menuFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 menuFrame.Visible = false
@@ -59,10 +59,22 @@ chamsToggle.TextSize = 14
 chamsToggle.Font = Enum.Font.GothamBold
 chamsToggle.Parent = menuFrame
 
+local teamCheckToggle = Instance.new("TextButton")
+teamCheckToggle.Name = "TeamCheckToggle"
+teamCheckToggle.Size = UDim2.new(0, 130, 0, 30)
+teamCheckToggle.Position = UDim2.new(0, 10, 0, 90)
+teamCheckToggle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+teamCheckToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+teamCheckToggle.Text = "Team Check: OFF"
+teamCheckToggle.TextSize = 14
+teamCheckToggle.Font = Enum.Font.GothamBold
+teamCheckToggle.Parent = menuFrame
+
 local toggleCorner = Instance.new("UICorner")
 toggleCorner.CornerRadius = UDim.new(0, 6)
 toggleCorner.Parent = espToggle
 toggleCorner:Clone().Parent = chamsToggle
+toggleCorner:Clone().Parent = teamCheckToggle
 
 local espObjects = {}
 local chamsObjects = {}
@@ -73,7 +85,20 @@ espBtn:GetPropertyChangedSignal("Position"):Connect(function()
     end
 end)
 
+local function isEnemy(player)
+    local localPlayer = game.Players.LocalPlayer
+    if not teamCheckEnabled then return true end
+    
+    if localPlayer.Team and player.Team then
+        return localPlayer.Team ~= player.Team
+    end
+    
+    return true
+end
+
 local function createESP(player)
+    if not isEnemy(player) then return end
+    
     local character = player.Character
     if not character then return end
     
@@ -104,6 +129,8 @@ local function createESP(player)
 end
 
 local function createChams(player)
+    if not isEnemy(player) then return end
+    
     local character = player.Character
     if not character then return end
     
@@ -153,18 +180,43 @@ local function removeChams(player)
     end
 end
 
+local function updateAllESP()
+    for player, esp in pairs(espObjects) do
+        esp:Destroy()
+        espObjects[player] = nil
+    end
+    
+    if espEnabled then
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer then
+                createESP(player)
+            end
+        end
+    end
+end
+
+local function updateAllChams()
+    for _, highlight in pairs(chamsObjects) do
+        highlight:Destroy()
+    end
+    chamsObjects = {}
+    
+    if chamsEnabled then
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer then
+                createChams(player)
+            end
+        end
+    end
+end
+
 local function toggleESP()
     espEnabled = not espEnabled
     
     if espEnabled then
         espToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
         espToggle.Text = "Esp Name: ON"
-        
-        for _, player in pairs(game.Players:GetPlayers()) do
-            if player ~= game.Players.LocalPlayer then
-                createESP(player)
-            end
-        end
+        updateAllESP()
     else
         espToggle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
         espToggle.Text = "Esp Name: OFF"
@@ -182,12 +234,7 @@ local function toggleChams()
     if chamsEnabled then
         chamsToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
         chamsToggle.Text = "CHAMS: ON"
-        
-        for _, player in pairs(game.Players:GetPlayers()) do
-            if player ~= game.Players.LocalPlayer then
-                createChams(player)
-            end
-        end
+        updateAllChams()
     else
         chamsToggle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
         chamsToggle.Text = "CHAMS: OFF"
@@ -197,6 +244,21 @@ local function toggleChams()
         end
         chamsObjects = {}
     end
+end
+
+local function toggleTeamCheck()
+    teamCheckEnabled = not teamCheckEnabled
+    
+    if teamCheckEnabled then
+        teamCheckToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+        teamCheckToggle.Text = "Team Check: ON"
+    else
+        teamCheckToggle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        teamCheckToggle.Text = "Team Check: OFF"
+    end
+    
+    updateAllESP()
+    updateAllChams()
 end
 
 local function toggleMenu()
@@ -230,6 +292,7 @@ espBtn.MouseButton1Click:Connect(toggleMenu)
 
 espToggle.MouseButton1Click:Connect(toggleESP)
 chamsToggle.MouseButton1Click:Connect(toggleChams)
+teamCheckToggle.MouseButton1Click:Connect(toggleTeamCheck)
 
 for _, player in pairs(game.Players:GetPlayers()) do
     if player ~= game.Players.LocalPlayer then
